@@ -29,6 +29,8 @@ Library
                  , compact-string-fix >= 0.3.1 && < 0.4
                  , cereal             >= 0.3.0.0
                  , path-pieces        >= 0.0 && < 0.1
+                 , utf8-string        >= 0.3 && < 0.4
+                 , MonadCatchIO-transformers
   
   ghc-options:   -Wall
   -- Modules not exported by this package.
@@ -37,6 +39,32 @@ Library
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
   -- Build-tools:         
   
+Test-Suite backendImplTests
+           type:                exitcode-stdio-1.0
+           main-is:             ./run-tests.hs
+           cpp-options:         -DTEST
+           hs-source-dirs:        .
+                                , ./Test
+           build-depends:       base               >= 4      && < 5
+                                , persistent         >= 0.6.0  && < 0.7.0
+                                , template-haskell   >= 2.4    && < 2.7
+                                , text               >= 0.8 && < 0.12
+                                , transformers       >= 0.2.1 && < 0.3
+                                , containers         >= 0.2 && < 0.5
+                                , bytestring         >= 0.9 && < 0.10
+                                , enumerator         >= 0.4 && < 0.5
+                                , riak               >= 0.6 && < 0.7
+                                , network            >= 2.2.1.7
+                                , compact-string-fix >= 0.3.1 && < 0.4
+                                , cereal             >= 0.3.0.0
+                                , path-pieces        >= 0.0 && < 0.1
+                                , utf8-string        >= 0.3 && < 0.4
+                                , MonadCatchIO-transformers
+                                , hspec             >= 0.6  && < 0.7
+                                , HUnit             
+                                , QuickCheck        >= 2    && < 3
+                                , riak-protobuf     >= 0.15 && < 0.16
+
 source-repository head
   type:       git
   location:   git://github.com/shoehn/persistent-riak.git
