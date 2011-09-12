@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses, FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances, PackageImports, RankNTypes, CPP, TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies, QuasiQuotes, GADTs #-}
+{-# LANGUAGE TypeFamilies, QuasiQuotes, GADTs, OverloadedStrings #-}
 
 -- | Test implementation for typeclass functions for the riak persist backend
 module Test.InterfaceTest
@@ -15,6 +15,7 @@ import Test.Hspec
 import Test.Hspec.HUnit ()
 import Test.Hspec.QuickCheck
 import qualified Test.HUnit as HUnit
+import Test.QuickCheck ((==>))
 
 import qualified Network.Riak as R
 import qualified Network.Riak.Connection as R
@@ -23,15 +24,20 @@ import qualified Network.Riak.Protocol.ServerInfo as R
 import qualified Network.Riak.Content as Content
 
 
-import qualified Data.ByteString.Lazy.UTF8 as B
+import qualified Data.ByteString.Lazy.UTF8 as BSL
+import qualified Data.ByteString.UTF8 as B
+import qualified Data.Text as T
 
 import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Base
+import Database.Persist.Riak
 
 import System.IO.Unsafe
 import Data.Maybe (fromJust)
 import "aeson-native" Data.Aeson
+import "aeson-native" Data.Aeson.Parser (value)
+import Data.Attoparsec.Lazy as L
 import Data.Map as M
 import Data.Time
 
@@ -46,16 +52,24 @@ Person
 make_person :: PersonGeneric backend
 make_person = Person {personName="Sebastian",  personAge=(Just 30), personCreated=(unsafePerformIO getCurrentTime)}
 
-riakTests :: IO [IO Spec]
+-- riakTests :: IO [IO Spec]
+
+--riakTests :: [Spec]
 riakTests = describe "riak database connection"
   [ it "can read the server_info)" 
     ( is_server_info )
   ]
   
-backendImplTests :: IO [IO Spec]
+-- backendImplTests :: IO [IO Spec]
+--backendImplTests :: [Spec]
 backendImplTests = describe "riak backend implementation"
   [ it "inserts and returns the key"
     (property prop_true)
+  ]
+
+jsonTests = describe "aeson typeclass implementation"
+  [ it "encodes and decodes persist text"
+    (property prop_encode_decode_text)
   ]
 
 insert :: (PersistBackend b m, PersistEntity val) 
@@ -99,7 +113,7 @@ open_connection_pool = do
 is_server_info :: Bool
 is_server_info = 
   case si of
-    R.ServerInfo n v -> ((B.toString $ fromJust $ v) == "0.14.2") && ((B.toString $ fromJust $ n) == "dev1@127.0.0.1")
+    R.ServerInfo n v -> ((BSL.toString $ fromJust $ v) == "0.14.0") && ((BSL.toString $ fromJust $ n) == "dev1@127.0.0.1")
     otherwise -> False
     where 
       pool = unsafePerformIO open_connection_pool
@@ -108,3 +122,11 @@ is_server_info =
 
 prop_true :: Bool -> Bool
 prop_true b = b || True
+
+prop_encode_decode_text s = (not ("" == s)) ==> case fmap fromJSON . L.parse value . encode . toJSON $ PersistText (T.pack s) of
+      L.Done _ (Success v) -> v == T.pack s
+      _                    -> False    
+
+json_bytestring = encode $ toJSON $ PersistText "hallo welt"
+
+test_bs = L.parse json $ BSL.fromString $ show json_bytestring

@@ -8,4 +8,5 @@ import Test.InterfaceTest
 main = hspecX $ descriptions $
         [ riakTests
         , backendImplTests
+        , jsonTests
         ]
